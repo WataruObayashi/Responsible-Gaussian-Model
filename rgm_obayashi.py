@@ -14,11 +14,16 @@ class RGM():
         self.K = cluster_num
         self.target = target.copy()
         
-        self.G = np.zeros([self.N, self.D])
-        self.Nk = np.zeros([self.D])
-        self.ck = np.zeros([self.D])
-        self.Mu = np.zeros([self.D, self.D])
-        self.Sigma = np.zeros([self.D, self.D, self.D])
+        if self.D > self.N:
+            self.small = self.N
+        else:
+            self.small = self.D
+
+        self.G = np.zeros([self.N, self.small])
+        self.Nk = np.zeros([self.small])
+        self.ck = np.zeros([self.small])
+        self.Mu = np.zeros([self.D, self.small])
+        self.Sigma = np.zeros([self.D, self.D, self.small])
         self.w = 0
 
         self.gamma = np.zeros([self.K, self.N])
@@ -64,16 +69,16 @@ class RGM():
         self.Nk = (np.ones([self.N]).T@(self.G*self.G)).T
 
         # calculate ck
-        for i in range(self.D):
+        for i in range(self.small):
             self.ck[i] = self.Nk[i] / self.N
 
         # calculate Mu
-        for i in range(self.D):
+        for i in range(self.small):
             self.Mu[:,i] = 1/self.Nk[i] * self.normalized_X @ (self.G[:,i]*self.G[:,i])
 
         # calculate Sigma
-        Sigma = np.zeros([self.D,self.D,self.D])
-        for i in range(self.D):
+        Sigma = np.zeros([self.D,self.D,self.small])
+        for i in range(self.small):
             tmp = np.zeros([self.D,self.D])
             for n in range(self.N):
                 tmp += 1/self.N * self.G[n,i]*self.G[n,i]*((self.normalized_X[:,n:n+1]-self.Mu[:,i]) @ \
@@ -81,7 +86,7 @@ class RGM():
             self.Sigma[:,:,i] = tmp
 
         # calculate w
-        MuSig = self.Mu @ self.Mu.T / (self.D)
+        MuSig = self.Mu @ self.Mu.T / (self.small)
         XSig = (self.normalized_X) @ (self.normalized_X).T / (self.N)
         self.w = np.sqrt(np.sum(XSig*XSig)/np.sum(MuSig*MuSig))
 
@@ -89,7 +94,7 @@ class RGM():
         self.Mu = self.Mu * np.sqrt(self.w)
         
         # modify Sigma
-        for i in range(self.D):
+        for i in range(self.small):
             tmp = np.zeros([self.D,self.D])
             for n in range(self.N):
                 tmp += 1/self.N * self.G[n,i]*self.G[n,i]*((self.normalized_X[:,n:n+1]-self.Mu[:,i]) @ \
